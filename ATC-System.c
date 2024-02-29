@@ -14,6 +14,7 @@ typedef struct FlightPlan_Node {
     Time depart;
     Time arrival;
     struct FlightPlan_Node *next;
+    struct FlightPlan_Node *prev;
 } Flight_Plan;
 
 typedef struct Bucket_Node {
@@ -54,8 +55,39 @@ Flight_Plan *makeNewFlightPlan(int id, Time dep, Time arr) {
     new->depart = dep;
     new->arrival = arr;
     new->next = NULL;
+    new->prev = NULL;
 
     return new;
+}
+
+int timeDiff(Time A, Time B) {
+    int diff = (A.hr - B.hr) * 60 + (A.min - B.min);
+    if (A.meridiem == am && B.meridiem == pm)
+        diff -= 12 * 60;
+    else if (A.meridiem == pm && B.meridiem == am)
+        diff += 12 * 60;
+    return diff;
+}
+
+int maxTime(Time A, Time B) {
+    int retVal = 0;
+    if (A.meridiem == B.meridiem) {
+        if (A.hr < B.hr)
+            retVal = -1;
+        else if (A.hr > B.hr)
+            retVal = 1;
+        else {
+            if (A.min < B.min)
+                retVal = -1;
+            else if (A.min > B.min)
+                retVal = 1;
+        }
+    }
+    else if (A.meridiem == am && B.meridiem == pm)
+        retVal = -1;
+    else
+        retVal = 1;
+    return retVal;
 }
 
 void addNewFlightPlan(Bucket **dashboard, Flight_Plan *newFP) {
