@@ -96,7 +96,29 @@ void addNewFlightPlan(Bucket **dashboard, Flight_Plan *newFP) {
         newB->next = curr;
         *dashboard = newB;
     }
+    
     else {
-        
+        if (curr->ETA_Beg->hr == newFP->arrival->hr) {
+            Flight_Plan *ptr = curr->FlightList;
+            Flight_Plan *fprev = NULL;
+
+            while (ptr && maxTime(ptr->depart, newFP->depart) < 1) {
+                fprev = ptr;
+                ptr = ptr->next;
+            }
+
+            fprev->next = newFP;
+            newFP->next = ptr;
+        }
+
+        else {
+            Time *t = (Time *)malloc(sizeof(Time));
+            t = makeTime(newFP->arrival->hr, 0);
+            Bucket *newB = (Bucket *)malloc(sizeof(Bucket));
+            newB = makeBucketNode(++b_id, t);
+            newB->FlightList = newFP;
+            prev->next = newB;
+            newB->next = curr;
+        }
     }
 }
