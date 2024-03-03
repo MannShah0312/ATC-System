@@ -159,4 +159,3 @@ void cancelFP(Bucket **dashboard, int FPid) {
     if (!curr && !flag)
         printf("No such flight with id = %d found", FPid);
 }
-
