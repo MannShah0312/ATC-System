@@ -177,4 +177,10 @@ void showStatus(Bucket *dashboard, int FPid) {
             printf("For flight id %d:\n-Departure Time: %d:%d Hrs\n-Arrival Time: %d:%d Hrs", fpcurr->flightID, fpcurr->depart->hr, fpcurr->depart->min, fpcurr->arrival->hr, fpcurr->arrival->min);
         }
     }
+    if (!curr && !flag)
+        printf("No such flight with id = %d found", FPid);
+}
+
+void reArrage(Bucket **dashboard, Time newT) {
+
 }
