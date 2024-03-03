@@ -159,3 +159,22 @@ void cancelFP(Bucket **dashboard, int FPid) {
     if (!curr && !flag)
         printf("No such flight with id = %d found", FPid);
 }
+
+void showStatus(Bucket *dashboard, int FPid) {
+    Bucket *curr = dashboard;
+    int flag = 0;
+    Flight_Plan *fpcurr;
+
+    while (curr && !flag) {
+        fpcurr = curr->FlightList;
+        while (fpcurr && (fpcurr->flightID != FPid)) {
+            fpcurr = fpcurr->next;
+        }
+        if (!fpcurr)
+            curr = curr->next;
+        else {
+            flag = 1;
+            printf("For flight id %d:\n-Departure Time: %d:%d Hrs\n-Arrival Time: %d:%d Hrs", fpcurr->flightID, fpcurr->depart->hr, fpcurr->depart->min, fpcurr->arrival->hr, fpcurr->arrival->min);
+        }
+    }
+}
