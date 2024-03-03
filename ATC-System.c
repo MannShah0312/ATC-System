@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-static int f_id = 0;
 static int b_id = 0;
 
 typedef struct Time_Node {
@@ -78,7 +77,7 @@ int maxTime(Time *A, Time *B) {
     return retVal;
 }
 
-void addNewFlightPlan(Bucket **dashboard, Flight_Plan *newFP) {
+void addNewFP(Bucket **dashboard, Flight_Plan *newFP) {
     Bucket *curr = *dashboard;
     Bucket *prev = NULL;
     
@@ -119,6 +118,29 @@ void addNewFlightPlan(Bucket **dashboard, Flight_Plan *newFP) {
             newB->FlightList = newFP;
             prev->next = newB;
             newB->next = curr;
+        }
+    }
+}
+
+void cancelFP(Bucket **dashboard, int FPid) {
+    Bucket *curr = *dashboard;
+    Bucket *prev = NULL;
+    Flight_Plan *fpcurr, *fpprev;
+    int flag = 0;
+
+    while (curr && !flag) {
+        fpcurr = curr->FlightList;
+        fpprev = NULL;
+        while (fpcurr && (fpcurr->flightID != FPid)) {
+            fpprev = fpcurr;
+            fpcurr = fpcurr->next;
+        }
+        if (!fpcurr) {
+            prev = curr;
+            curr = curr->next;
+        }
+        else {
+            
         }
     }
 }
