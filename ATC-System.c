@@ -140,7 +140,23 @@ void cancelFP(Bucket **dashboard, int FPid) {
             curr = curr->next;
         }
         else {
-            
+            flag = 1;
+            if (fpprev)
+                fpprev->next = fpcurr->next;
+            else {
+                curr->FlightList = fpcurr->next;
+                if (!curr->FlightList) {
+                    if (prev)
+                        prev->next = curr->next;
+                    else    
+                        *dashboard = curr->next;
+                    free(curr);
+                }
+            }
+            free(fpcurr);
         }
     }
+    if (!curr && !flag)
+        printf("No such flight with id = %d found", FPid);
 }
+
