@@ -181,23 +181,23 @@ void showStatus(Bucket *dashboard, int FPid) {
         printf("No such flight with id = %d found", FPid);
 }
 
-void reArrage(Bucket **dashboard, Time newT) {
+void reArrage(Bucket **dashboard, Time *newT) {
     Bucket *curr = *dashboard;
     Bucket *prev = NULL;
     Flight_Plan *fpcurr;
     Flight_Plan *fpprev;
 
     while (curr && newT->hr > curr->ETA_Beg->hr) {
-        fpcurr = curr->Flight_Plan;
-        fprev = NULL;
+        fpcurr = curr->FlightList;
+        fpprev = NULL;
 
         while (fpcurr) {
-            fprev = fpcurr;
+            fpprev = fpcurr;
             fpcurr = fpcurr->next;
             free(fpprev);
         }
 
-        curr->Flight_Plan = NULL;
+        curr->FlightList = NULL;
         prev = curr;
         curr = curr->next;
         free(prev);
@@ -205,8 +205,8 @@ void reArrage(Bucket **dashboard, Time newT) {
 
     *dashboard = curr;
     if (curr->ETA_Beg->hr == newT->hr) {
-        fpcurr = curr->Flight_Plan;
-        fprev = NULL;
+        fpcurr = curr->FlightList;
+        fpprev = NULL;
 
         while (fpcurr) {
             if (fpcurr->arrival->min < newT->min) {
