@@ -181,34 +181,51 @@ void showStatus(Bucket *dashboard, int FPid) {
         printf("No such flight with id = %d found", FPid);
 }
 
-void reArrage(Bucket **dashboard, Time *newT) {
-    Bucket *curr, *prev;
-    curr = *dashboard;
-    prev = NULL;
+void reArrage(Bucket **dashboard, Time newT) {
+    Bucket *curr = *dashboard;
+    Bucket *prev = NULL;
+    Flight_Plan *fpcurr;
+    Flight_Plan *fpprev;
 
-    while (curr && curr->ETA_Beg->hr < newT->hr) {
-        prev = curr;
-        curr = curr->next;
-        free(prev);
-    }
+    while (curr && newT->hr > curr->ETA_Beg->hr) {
+        fpcurr = curr->Flight_Plan;
+        fprev = NULL;
 
-    Flight_Plan *fpcurr, *fpprev;
-    fpcurr = curr->FlightList;
-    fpprev = NULL;
+        while (fpcurr) {
+            fprev = fpcurr;
+            fpcurr = fpcurr->next;
+            free(fpprev);
+        }
 
-    while (fpcurr && fpcurr->arrival->min < newT->min) {
-        fpprev = fpcurr;
-        fpcurr = fpcurr->next;
-        free(fpprev);
-    }
-
-    if (!fpcurr) {
+        curr->Flight_Plan = NULL;
         prev = curr;
         curr = curr->next;
         free(prev);
     }
 
     *dashboard = curr;
+    if (curr->ETA_Beg->hr == newT->hr) {
+        fpcurr = curr->Flight_Plan;
+        fprev = NULL;
 
-    
+        while (fpcurr) {
+            if (fpcurr->arrival->min < newT->min) {
+                if (!fpprev)  {
+                    fpprev = fpcurr;
+                    fpcurr = fpcurr->next;
+                    free(fpprev);
+                    fpprev = NULL;
+                }
+                else {
+                    fpprev->next = fpcurr->next;
+                    free(fpcurr);
+                    fpcurr = fpprev->next;
+                }
+            }
+            else {
+                fpprev = fpcurr;
+                fpcurr = fpcurr->next;
+            }
+        }        
+    }
 }
