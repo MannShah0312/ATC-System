@@ -181,6 +181,34 @@ void showStatus(Bucket *dashboard, int FPid) {
         printf("No such flight with id = %d found", FPid);
 }
 
+void insertSorted(Bucket **BuckPtr, Flight_Plan *fp) {
+    Bucket *Buck = *BuckPtr;
+    Flight_Plan *curr, *prev;
+
+    if (!Buck->FlightList) {
+        Buck->FlightList = fp;
+    }
+    else {
+        curr = Buck->FlightList;
+        prev = NULL;
+        
+        while (curr && maxTime(curr->depart, fp->depart) < 1) {
+            prev = curr;
+            curr = curr->next;
+        }
+
+        if (!prev) {
+            fp->next = Buck->FlightList;
+            Buck->FlightList = fp;
+        }
+        else {
+            prev->next = fp;
+            fp->next = curr;
+        }
+    }
+    *BuckPtr = Buck;
+}
+
 void reArrage(Bucket **dashboard, Time *newT) {
     Bucket *curr = *dashboard;
     Bucket *prev = NULL;
@@ -215,6 +243,7 @@ void reArrage(Bucket **dashboard, Time *newT) {
                     fpcurr = fpcurr->next;
                     free(fpprev);
                     fpprev = NULL;
+                    curr->FlightList = fpcurr;
                 }
                 else {
                     fpprev->next = fpcurr->next;
@@ -226,6 +255,14 @@ void reArrage(Bucket **dashboard, Time *newT) {
                 fpprev = fpcurr;
                 fpcurr = fpcurr->next;
             }
-        }        
+        }
+        if (!curr->FlightList) {
+            prev = curr;
+            curr = curr->next;
+            free(prev);
+            *dashboard = curr;
+        }
     }
+    
+
 }
