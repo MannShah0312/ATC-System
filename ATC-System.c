@@ -264,5 +264,46 @@ void reArrage(Bucket **dashboard, Time *newT) {
         }
     }
     
+    curr = *dashboard;
+    while (curr) {
+        curr->ETA_Beg->min = newT->min;
+        curr->ETA_End->min = newT->min - 1;
+        curr = curr->next;
+    }
 
+    curr = *dashboard;
+    prev = curr;
+    curr = curr->next;
+    Flight_Plan *toCorrect;
+
+    while (curr) {
+        fpcurr = curr->FlightList;
+        fpprev = NULL;
+
+        while (fpcurr) {
+            int diff = timeDiff(fpcurr->arrival, curr->ETA_Beg);
+
+            if (diff >= 0) {
+                fpprev = fpcurr;
+                fpcurr = fpcurr->next;
+            }
+            else {
+                if (!fpprev) {
+                    curr->FlightList = fpcurr->next;
+                    toCorrect = fpcurr;
+                    fpcurr = fpcurr->next;
+                    toCorrect->next = NULL;
+                }
+                else {
+                    fpprev->next = fpcurr->next;
+                    toCorrect = fpcurr;
+                    fpcurr = fpcurr->next;
+                    toCorrect->next = NULL;
+                }
+
+                int diff_prev = timeDiff(toCorrect->arrival, prev->ETA_Beg);
+                
+            }
+        }
+    }
 }
