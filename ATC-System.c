@@ -35,6 +35,7 @@ Time *makeTime(int hr, int min) {
 
 Bucket *makeBucketNode(int id, Time *Beg) {
     Bucket *newB = (Bucket *)malloc(sizeof(Bucket));
+    newB->ETA_End = (Time *)malloc(sizeof(Time));
 
     newB->BucketID = id;
     newB->ETA_Beg = Beg;
@@ -67,14 +68,14 @@ int timeDiff(Time *A, Time *B) {
 int maxTime(Time *A, Time *B) {
     int retVal = 0;
     if (A->hr < B->hr)
-        retVal = -1;
-    else if (A->hr > B->hr)
         retVal = 1;
+    else if (A->hr > B->hr)
+        retVal = -1;
     else {
         if (A->min < B->min)
-            retVal = -1;
-        else if (A->min > B->min)
             retVal = 1;
+        else if (A->min > B->min)
+            retVal = -1;
     }
     return retVal;
 }
@@ -88,11 +89,9 @@ void addNewFP(Bucket **dashboard, Flight_Plan *newFP) {
         curr = curr->next;
     }
 
-    if (!prev) {
-        Time *t = (Time *)malloc(sizeof(Time));
-        t = makeTime(newFP->arrival->hr, 0);
-        Bucket *newB = (Bucket *)malloc(sizeof(Bucket));
-        newB = makeBucketNode(++b_id, t);
+    if (!prev || !curr) {
+        Time *t = makeTime(newFP->arrival->hr, 0);
+        Bucket *newB = makeBucketNode(++b_id, t);
         newB->FlightList = newFP;
         newB->next = curr;
         *dashboard = newB;
@@ -103,7 +102,7 @@ void addNewFP(Bucket **dashboard, Flight_Plan *newFP) {
             Flight_Plan *ptr = curr->FlightList;
             Flight_Plan *fprev = NULL;
 
-            while (ptr && maxTime(ptr->depart, newFP->depart) < 1) {
+            while (ptr && maxTime(ptr->depart, newFP->depart) != -1) {
                 fprev = ptr;
                 ptr = ptr->next;
             }
@@ -113,10 +112,8 @@ void addNewFP(Bucket **dashboard, Flight_Plan *newFP) {
         }
 
         else {
-            Time *t = (Time *)malloc(sizeof(Time));
-            t = makeTime(newFP->arrival->hr, 0);
-            Bucket *newB = (Bucket *)malloc(sizeof(Bucket));
-            newB = makeBucketNode(++b_id, t);
+            Time *t = makeTime(newFP->arrival->hr, 0);
+            Bucket *newB = makeBucketNode(++b_id, t);
             newB->FlightList = newFP;
             prev->next = newB;
             newB->next = curr;
@@ -194,7 +191,7 @@ void insertSorted(Bucket **BuckPtr, Flight_Plan *fp) {
         curr = Buck->FlightList;
         prev = NULL;
         
-        while (curr && maxTime(curr->depart, fp->depart) < 1) {
+        while (curr && maxTime(curr->depart, fp->depart) != -1) {
             prev = curr;
             curr = curr->next;
         }
@@ -211,7 +208,7 @@ void insertSorted(Bucket **BuckPtr, Flight_Plan *fp) {
     *BuckPtr = Buck;
 }
 
-void reArrage(Bucket **dashboard, Time *newT) {
+void BucketRearrange(Bucket **dashboard, Time *newT) {
     Bucket *curr = *dashboard;
     Bucket *prev = NULL;
     Flight_Plan *fpcurr;
@@ -318,5 +315,7 @@ void reArrage(Bucket **dashboard, Time *newT) {
                 }
             }
         }
+        prev = curr;
+        curr = curr->next;
     }
 }
