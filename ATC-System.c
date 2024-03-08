@@ -130,10 +130,12 @@ void cancelFP(Bucket **dashboard, int FPid) {
     while (curr && !flag) {
         fpcurr = curr->FlightList;
         fpprev = NULL;
+
         while (fpcurr && (fpcurr->flightID != FPid)) {
             fpprev = fpcurr;
             fpcurr = fpcurr->next;
         }
+        
         if (!fpcurr) {
             prev = curr;
             curr = curr->next;
@@ -149,6 +151,8 @@ void cancelFP(Bucket **dashboard, int FPid) {
                         prev->next = curr->next;
                     else    
                         *dashboard = curr->next;
+                    free(curr->ETA_Beg);
+                    free(curr->ETA_End);
                     free(curr);
                 }
             }
@@ -225,6 +229,8 @@ void BucketRearrange(Bucket **dashboard, Time *newT) {
         }
 
         curr->FlightList = NULL;
+        free(curr->ETA_Beg);
+        free(curr->ETA_End);
         prev = curr;
         curr = curr->next;
         free(prev);
@@ -246,6 +252,8 @@ void BucketRearrange(Bucket **dashboard, Time *newT) {
                 }
                 else {
                     fpprev->next = fpcurr->next;
+                    free(curr->ETA_Beg);
+                    free(curr->ETA_End);
                     free(fpcurr);
                     fpcurr = fpprev->next;
                 }
@@ -318,4 +326,51 @@ void BucketRearrange(Bucket **dashboard, Time *newT) {
         prev = curr;
         curr = curr->next;
     }
+}
+
+void displayDashboard(Bucket *dashboard, char *fileName) {
+    FILE *newF = fopen(fileName, "w");
+
+    Bucket *curr = dashboard;
+    Flight_Plan *fpcurr;
+    int i;
+
+    while (curr) {
+        fprintf(newF, "Bucket info: ID: %d -- ETA_Beginng: %d:%d -- ETA_Ending: %d:%d\n", curr->BucketID, curr->ETA_Beg->hr, curr->ETA_Beg->min, curr->ETA_End->hr, curr->ETA_End->min);
+        fprintf(newF, "Flight List:\n");
+        fpcurr = curr->FlightList;
+        i = 1;
+
+        while (fpcurr) {
+            fprintf(newF, "\t%d. Flight ID: %d, Departure: %d:%d, Arrival: %d,%d\n", i, fpcurr->flightID, fpcurr->depart->hr, fpcurr->depart->min, fpcurr->arrival->hr, fpcurr->arrival->min);
+            fpcurr = fpcurr->next;
+            i++;
+        }
+        fprintf(newF, "\n");
+    }
+
+    fclose(newF);
+}
+
+Bucket* input(char *fileName, Bucket *dashboard) {
+    FILE *f = fopen(fileName, "r");
+    int id, depHr, depMin, arrHr, arrMin;
+
+    fscanf(f, "%s,%s,%s,%s,%s\n");
+
+    while (!feof(f)) {
+        fscanf(f, "%d,%d,%d,%d,%d\n", &id, &depHr, &depMin, &arrHr, &arrMin);
+        Time *dep = makeTime(depHr, depMin);
+        Time *arr = makeTime(arrHr, arrMin);
+        Flight_Plan *fp = makeNewFlightPlan(id, dep, arr);
+        addNewFP(&dashboard, fp);
+    }
+
+    fclose(f);
+    return dashboard;
+}
+
+int main()
+{
+
 }
