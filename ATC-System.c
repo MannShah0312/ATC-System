@@ -38,8 +38,10 @@ Bucket *makeBucketNode(int id, Time *Beg) {
 
     newB->BucketID = id;
     newB->ETA_Beg = Beg;
-    newB->ETA_End = Beg;
-    newB->ETA_End->min = 59;
+    newB->ETA_End->hr = Beg->hr + ((Beg->min + 59) / 60);
+    newB->ETA_End->min = Beg->min + 59;
+    if (newB->ETA_End->min > 60)
+        newB->ETA_End->min -= 60;
     newB->FlightList = NULL;
     newB->next = NULL;
 
@@ -302,7 +304,18 @@ void reArrage(Bucket **dashboard, Time *newT) {
                 }
 
                 int diff_prev = timeDiff(toCorrect->arrival, prev->ETA_Beg);
-                
+
+                if (diff_prev < 60) {
+                    insertSorted(&prev, toCorrect);
+                }
+                else {
+                    Time *TforNewB = makeTime(toCorrect->arrival->hr, newT->min);
+                    Bucket *newB = makeBucketNode(++b_id, TforNewB);
+                    prev->next = newB;
+                    newB->next = curr;
+                    prev = newB;
+                    insertSorted(&prev, toCorrect);
+                }
             }
         }
     }
