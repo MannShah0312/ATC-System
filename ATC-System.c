@@ -88,35 +88,46 @@ void addNewFP(Bucket **dashboard, Flight_Plan *newFP) {
         prev = curr;
         curr = curr->next;
     }
-
-    if (!prev || !curr) {
-        Time *t = makeTime(newFP->arrival->hr, 0);
-        Bucket *newB = makeBucketNode(++b_id, t);
-        newB->FlightList = newFP;
-        newB->next = curr;
-        *dashboard = newB;
-    }
     
-    else {
-        if (curr->ETA_Beg->hr == newFP->arrival->hr) {
-            Flight_Plan *ptr = curr->FlightList;
-            Flight_Plan *fprev = NULL;
-
-            while (ptr && maxTime(ptr->depart, newFP->depart) != -1) {
-                fprev = ptr;
-                ptr = ptr->next;
-            }
-
-            fprev->next = newFP;
-            newFP->next = ptr;
+    if (curr) {
+        if (curr->ETA_Beg->hr > newFP->arrival->hr) {
+            Time *t = makeTime(newFP->arrival->hr, 0);
+            Bucket *newB = makeBucketNode(++b_id, t);
+            newB->FlightList = newFP;
+            newB->next = curr;
+            if (prev)
+                prev->next = newB;
+            else
+                *dashboard = newB;
         }
+        else {
+            Flight_Plan *fpcurr = curr->FlightList;
+            Flight_Plan *fpprev = NULL;
 
+            while (fpcurr && maxTime(fpcurr->depart, newFP->depart) != -1) {
+                fpprev = fpcurr;
+                fpcurr = fpcurr->next;
+            }
+            
+            if (fpprev)
+                fpprev->next = newFP;
+            else
+                curr->FlightList = newFP;
+            newFP->next = fpcurr;
+        }
+    }
+    else {
+        if (!prev) {
+            Time *t = makeTime(newFP->arrival->hr, 0);
+            Bucket *newB = makeBucketNode(++b_id, t);
+            newB->FlightList = newFP;
+            *dashboard = newB;
+        }
         else {
             Time *t = makeTime(newFP->arrival->hr, 0);
             Bucket *newB = makeBucketNode(++b_id, t);
             newB->FlightList = newFP;
             prev->next = newB;
-            newB->next = curr;
         }
     }
 }
@@ -156,11 +167,13 @@ void cancelFP(Bucket **dashboard, int FPid) {
                     free(curr);
                 }
             }
+            free(fpcurr->arrival);
+            free(fpcurr->depart);
             free(fpcurr);
         }
     }
     if (!curr && !flag)
-        printf("No such flight with id = %d found", FPid);
+        printf("No flight with ID %d present, so it cannot be cancelled\n", FPid);
 }
 
 void showStatus(Bucket *dashboard, int FPid) {
@@ -177,11 +190,11 @@ void showStatus(Bucket *dashboard, int FPid) {
             curr = curr->next;
         else {
             flag = 1;
-            printf("For flight id %d:\n-Departure Time: %d:%d Hrs\n-Arrival Time: %d:%d Hrs", fpcurr->flightID, fpcurr->depart->hr, fpcurr->depart->min, fpcurr->arrival->hr, fpcurr->arrival->min);
+            printf("For flight id %d:\n   -Departure Time: %d:%d Hrs\n   -Arrival Time: %d:%d Hrs\n", fpcurr->flightID, fpcurr->depart->hr, fpcurr->depart->min, fpcurr->arrival->hr, fpcurr->arrival->min);
         }
     }
     if (!curr && !flag)
-        printf("No such flight with id = %d found", FPid);
+        printf("No such flight with id %d found\n", FPid);
 }
 
 void insertSorted(Bucket **BuckPtr, Flight_Plan *fp) {
@@ -225,6 +238,8 @@ void BucketRearrange(Bucket **dashboard, Time *newT) {
         while (fpcurr) {
             fpprev = fpcurr;
             fpcurr = fpcurr->next;
+            free(fpprev->arrival);
+            free(fpprev->depart);
             free(fpprev);
         }
 
@@ -246,14 +261,16 @@ void BucketRearrange(Bucket **dashboard, Time *newT) {
                 if (!fpprev)  {
                     fpprev = fpcurr;
                     fpcurr = fpcurr->next;
+                    free(fpprev->arrival);
+                    free(fpprev->depart);
                     free(fpprev);
                     fpprev = NULL;
                     curr->FlightList = fpcurr;
                 }
                 else {
                     fpprev->next = fpcurr->next;
-                    free(curr->ETA_Beg);
-                    free(curr->ETA_End);
+                    free(fpcurr->arrival);
+                    free(fpcurr->depart);
                     free(fpcurr);
                     fpcurr = fpprev->next;
                 }
@@ -266,65 +283,74 @@ void BucketRearrange(Bucket **dashboard, Time *newT) {
         if (!curr->FlightList) {
             prev = curr;
             curr = curr->next;
+            free(prev->ETA_Beg);
+            free(prev->ETA_End);
             free(prev);
             *dashboard = curr;
         }
     }
     
     curr = *dashboard;
-    while (curr) {
-        curr->ETA_Beg->min = newT->min;
-        curr->ETA_End->min = newT->min - 1;
-        curr = curr->next;
-    }
 
-    curr = *dashboard;
-    prev = curr;
-    curr = curr->next;
-    Flight_Plan *toCorrect;
-
-    while (curr) {
-        fpcurr = curr->FlightList;
-        fpprev = NULL;
-
-        while (fpcurr) {
-            int diff = timeDiff(fpcurr->arrival, curr->ETA_Beg);
-
-            if (diff >= 0) {
-                fpprev = fpcurr;
-                fpcurr = fpcurr->next;
-            }
-            else {
-                if (!fpprev) {
-                    curr->FlightList = fpcurr->next;
-                    toCorrect = fpcurr;
-                    fpcurr = fpcurr->next;
-                    toCorrect->next = NULL;
-                }
-                else {
-                    fpprev->next = fpcurr->next;
-                    toCorrect = fpcurr;
-                    fpcurr = fpcurr->next;
-                    toCorrect->next = NULL;
-                }
-
-                int diff_prev = timeDiff(toCorrect->arrival, prev->ETA_Beg);
-
-                if (diff_prev < 60) {
-                    insertSorted(&prev, toCorrect);
-                }
-                else {
-                    Time *TforNewB = makeTime(toCorrect->arrival->hr, newT->min);
-                    Bucket *newB = makeBucketNode(++b_id, TforNewB);
-                    prev->next = newB;
-                    newB->next = curr;
-                    prev = newB;
-                    insertSorted(&prev, toCorrect);
-                }
-            }
+    if (newT->min + 59 >= 60) {
+        while (curr) {
+            curr->ETA_Beg->min = newT->min;
+            curr->ETA_End->min = newT->min - 1;
+            if(curr->ETA_End->hr < 23)
+                curr->ETA_End->hr += 1;
+            else
+                curr->ETA_End->hr = 0;
+            curr = curr->next;
         }
+
+        curr = *dashboard;
         prev = curr;
         curr = curr->next;
+        Flight_Plan *toCorrect;
+
+        while (curr) {
+            fpcurr = curr->FlightList;
+            fpprev = NULL;
+
+            while (fpcurr) {
+                int diff = timeDiff(fpcurr->arrival, curr->ETA_Beg);
+
+                if (diff >= 0) {
+                    fpprev = fpcurr;
+                    fpcurr = fpcurr->next;
+                }
+                else {
+                    if (!fpprev) {
+                        curr->FlightList = fpcurr->next;
+                        toCorrect = fpcurr;
+                        fpcurr = fpcurr->next;
+                        toCorrect->next = NULL;
+                    }
+                    else {
+                        fpprev->next = fpcurr->next;
+                        toCorrect = fpcurr;
+                        fpcurr = fpcurr->next;
+                        toCorrect->next = NULL;
+                    }
+
+                    int diff_prev = timeDiff(toCorrect->arrival, prev->ETA_Beg);
+
+                    if (diff_prev < 60) {
+                        insertSorted(&prev, toCorrect);
+                    }
+                    else {
+                        Time *TforNewB = makeTime(toCorrect->arrival->hr, newT->min);
+                        Bucket *newB = makeBucketNode(++b_id, TforNewB);
+                        prev->next = newB;
+                        newB->next = curr;
+                        prev = newB;
+                        insertSorted(&prev, toCorrect);
+                    }
+                }
+            }
+            prev = curr;
+            curr = curr->next;
+        }
     }
 }
 
@@ -342,22 +368,21 @@ void displayDashboard(Bucket *dashboard, char *fileName) {
         i = 1;
 
         while (fpcurr) {
-            fprintf(newF, "\t%d. Flight ID: %d, Departure: %d:%d, Arrival: %d,%d\n", i, fpcurr->flightID, fpcurr->depart->hr, fpcurr->depart->min, fpcurr->arrival->hr, fpcurr->arrival->min);
+            fprintf(newF, "\t%d. Flight ID: %d, Departure: %d:%d, Arrival: %d:%d\n", i, fpcurr->flightID, fpcurr->depart->hr, fpcurr->depart->min, fpcurr->arrival->hr, fpcurr->arrival->min);
             fpcurr = fpcurr->next;
             i++;
         }
         fprintf(newF, "\n");
+        curr = curr->next;
     }
 
     fclose(newF);
 }
 
-Bucket* input(char *fileName, Bucket *dashboard) {
+Bucket* input(Bucket *dashboard, char *fileName) {
     FILE *f = fopen(fileName, "r");
     int id, depHr, depMin, arrHr, arrMin;
-
-    fscanf(f, "%s,%s,%s,%s,%s\n");
-
+    fscanf(f, "%*s,%*s,%*s,%*s,%*s\n");
     while (!feof(f)) {
         fscanf(f, "%d,%d,%d,%d,%d\n", &id, &depHr, &depMin, &arrHr, &arrMin);
         Time *dep = makeTime(depHr, depMin);
@@ -372,5 +397,14 @@ Bucket* input(char *fileName, Bucket *dashboard) {
 
 int main()
 {
-
+    Bucket *dashboard = NULL;
+    dashboard = input(dashboard, "flights.csv");
+    displayDashboard(dashboard, "flights.txt");
+    showStatus(dashboard, 100);
+    cancelFP(&dashboard, 14);
+    Time *newT = makeTime(2, 30);
+    BucketRearrange(&dashboard, newT);
+    displayDashboard(dashboard, "output.txt");
+    cancelFP(&dashboard, 85);
+    displayDashboard(dashboard, "output1.txt");
 }
